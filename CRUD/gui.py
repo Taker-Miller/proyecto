@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
-from register import create_register_gui
-from logica import validar_usuario, registrar_incidencia, obtener_todas_las_incidencias, actualizar_incidencia, borrar_incidencia, registrar_asignacion, obtener_todas_las_asignaciones
+from register import crear_interfaz_registro
+from logica import validar_usuario, registrar_incidencia, obtener_todas_las_incidencias, actualizar_incidencia, borrar_incidencia, registrar_asignacion, obtener_todas_las_asignaciones, obtener_todos_los_usuarios
 from datetime import datetime
 
 class Aplicacion:
@@ -31,7 +31,7 @@ class Aplicacion:
         button_frame = tk.Frame(frame, bg='#f0f0f0')
         button_frame.pack(fill=tk.X, expand=True)
         tk.Button(button_frame, text="Iniciar sesión", command=self.intentar_inicio_sesion, relief='raised', bd=3, font=('Arial', 12)).pack(side=tk.LEFT, expand=True)
-        tk.Button(button_frame, text="Registrar", command=lambda: create_register_gui(self.root, self.crear_interfaz_inicio_sesion, self.crear_interfaz_inicio_sesion), relief='raised', bd=3, font=('Arial', 12)).pack(side=tk.RIGHT, expand=True)
+        tk.Button(button_frame, text="Registrar", command=lambda: crear_interfaz_registro(self.root, self.crear_interfaz_inicio_sesion, self.crear_interfaz_inicio_sesion), relief='raised', bd=3, font=('Arial', 12)).pack(side=tk.RIGHT, expand=True)
 
     def intentar_inicio_sesion(self):
         nombre_usuario = self.username_entry.get()
@@ -64,10 +64,7 @@ class Aplicacion:
         tk.Button(left_frame, text="Incidencias", command=self.crear_interfaz_lista_incidencias, font=('Arial', 12)).pack(pady=10)
         tk.Button(left_frame, text="Asignaciones", command=self.crear_interfaz_lista_asignaciones, font=('Arial', 12)).pack(pady=10)
         tk.Button(left_frame, text="Asignar", command=self.crear_interfaz_asignar_tecnico, font=('Arial', 12)).pack(pady=10)
-        tk.Button(left_frame, text="Inventario", font=('Arial', 12)).pack(pady=10)
-        tk.Button(left_frame, text="Clientes", font=('Arial', 12)).pack(pady=10)
-        tk.Button(left_frame, text="Proveedores", font=('Arial', 12)).pack(pady=10)
-        tk.Button(left_frame, text="Pedidos", font=('Arial', 12)).pack(pady=10)
+        tk.Button(left_frame, text="Usuarios", command=self.crear_interfaz_lista_usuarios, font=('Arial', 12)).pack(pady=10)
 
         center_frame = tk.Frame(main_frame, bg='#ffffff')
         center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -207,7 +204,7 @@ class Aplicacion:
 
     def crear_interfaz_lista_asignaciones(self):
         for widget in self.root.winfo_children():
-            widget.destroy()
+            self.root.destroy()
 
         self.root.title("Lista de Asignaciones")
         self.root.geometry("800x600")
@@ -262,6 +259,35 @@ class Aplicacion:
             ventana.destroy()
         else:
             messagebox.showerror("Error", "No se pudo asignar el técnico.")
+
+    def crear_interfaz_lista_usuarios(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        self.root.title("Lista de Usuarios")
+        self.root.geometry("800x600")
+
+        frame = tk.Frame(self.root)
+        frame.pack(padx=20, pady=20, fill=tk.BOTH, expand=True)
+
+        columnas = ("IDUsuario", "Nombre", "Correo", "Tipo")
+        self.user_tree = ttk.Treeview(frame, columns=columnas, show='headings')
+        self.user_tree.pack(fill=tk.BOTH, expand=True)
+
+        for col in columnas:
+            self.user_tree.heading(col, text=col)
+            self.user_tree.column(col, anchor=tk.CENTER)
+
+        self.cargar_usuarios()
+
+        tk.Button(frame, text="Regresar", command=self.crear_interfaz_principal, font=('Arial', 12)).pack(pady=10)
+
+    def cargar_usuarios(self):
+        for i in self.user_tree.get_children():
+            self.user_tree.delete(i)
+        usuarios = obtener_todos_los_usuarios()
+        for usuario in usuarios:
+            self.user_tree.insert('', tk.END, values=usuario)
 
 if __name__ == "__main__":
     root = tk.Tk()
