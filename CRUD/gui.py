@@ -1,16 +1,19 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
+from tkcalendar import DateEntry
+from PIL import Image, ImageTk
 from register import crear_interfaz_registro
-from logica import validar_usuario, registrar_incidencia, obtener_todas_las_incidencias, actualizar_incidencia, borrar_incidencia, registrar_asignacion, obtener_todas_las_asignaciones, obtener_todos_los_usuarios
+from logica import validar_usuario, registrar_incidencia, obtener_todas_las_incidencias, actualizar_incidencia, borrar_incidencia, registrar_asignacion, obtener_todas_las_asignaciones, obtener_todos_los_usuarios, borrar_usuario, borrar_asignacion, obtener_todos_los_tecnicos
 from datetime import datetime
 
 class Aplicacion:
     def __init__(self, root):
         self.root = root
         self.root.title("Inicio de sesión - Sistema de Mesa de Ayuda")
-        self.root.geometry("400x250")
+        self.root.geometry("400x300")
         self.root.configure(bg='#f0f0f0')
         self.user_id = None
+        self.user_type = None
         self.crear_interfaz_inicio_sesion()
 
     def crear_interfaz_inicio_sesion(self):
@@ -43,6 +46,7 @@ class Aplicacion:
         usuario = validar_usuario(nombre_usuario, contrasena)
         if usuario:
             self.user_id = usuario[0]
+            self.user_type = usuario[1]
             self.crear_interfaz_principal()
         else:
             messagebox.showerror("Error de Inicio de Sesión", "Nombre de usuario o contraseña incorrectos.")
@@ -63,12 +67,19 @@ class Aplicacion:
         tk.Button(left_frame, text="Registrar Incidencia", command=self.crear_interfaz_registrar_incidencia, font=('Arial', 12)).pack(pady=10)
         tk.Button(left_frame, text="Incidencias", command=self.crear_interfaz_lista_incidencias, font=('Arial', 12)).pack(pady=10)
         tk.Button(left_frame, text="Asignaciones", command=self.crear_interfaz_lista_asignaciones, font=('Arial', 12)).pack(pady=10)
-        tk.Button(left_frame, text="Asignar", command=self.crear_interfaz_asignar_tecnico, font=('Arial', 12)).pack(pady=10)
         tk.Button(left_frame, text="Usuarios", command=self.crear_interfaz_lista_usuarios, font=('Arial', 12)).pack(pady=10)
+        tk.Button(left_frame, text="Asignar Incidencia", command=self.crear_interfaz_asignar_incidencia, font=('Arial', 12)).pack(pady=10)
 
         center_frame = tk.Frame(main_frame, bg='#ffffff')
         center_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
         tk.Label(center_frame, text="Bienvenido al Sistema de Mesa de Ayuda", font=('Helvetica', 16), bg='#ffffff').pack(pady=20)
+
+        # Cargar y mostrar la imagen
+        img = Image.open("cliente.png")
+        img = img.resize((100, 100), Image.LANCZOS)  # Ajustar el tamaño de la imagen
+        self.img_tk = ImageTk.PhotoImage(img)  # Mantener una referencia a la imagen
+        tk.Label(center_frame, image=self.img_tk, bg='#ffffff').pack(pady=10)
 
     def crear_interfaz_registrar_incidencia(self):
         for widget in self.root.winfo_children():
@@ -93,11 +104,11 @@ class Aplicacion:
         self.status_entry.grid(row=2, column=1, pady=5)
 
         tk.Label(frame, text="Fecha de Creación:", font=('Arial', 12)).grid(row=3, column=0, sticky=tk.W, pady=5)
-        self.creation_date_entry = tk.Entry(frame, font=('Arial', 12), width=40)
+        self.creation_date_entry = DateEntry(frame, font=('Arial', 12), width=40, background='darkblue', foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
         self.creation_date_entry.grid(row=3, column=1, pady=5)
 
         tk.Label(frame, text="Fecha de Actualización:", font=('Arial', 12)).grid(row=4, column=0, sticky=tk.W, pady=5)
-        self.update_date_entry = tk.Entry(frame, font=('Arial', 12), width=40)
+        self.update_date_entry = DateEntry(frame, font=('Arial', 12), width=40, background='darkblue', foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
         self.update_date_entry.grid(row=4, column=1, pady=5)
 
         tk.Button(frame, text="Guardar Incidencia", command=self.guardar_incidencia, font=('Arial', 12)).grid(row=5, columnspan=2, pady=10)
@@ -107,8 +118,8 @@ class Aplicacion:
         titulo = self.title_entry.get()
         descripcion = self.description_entry.get()
         estado = self.status_entry.get()
-        fecha_creacion = self.creation_date_entry.get()
-        fecha_actualizacion = self.update_date_entry.get()
+        fecha_creacion = self.creation_date_entry.get_date().strftime('%Y-%m-%d')
+        fecha_actualizacion = self.update_date_entry.get_date().strftime('%Y-%m-%d')
         if registrar_incidencia(titulo, descripcion, estado, fecha_creacion, fecha_actualizacion, self.user_id):
             messagebox.showinfo("Registro de Incidencia", "Incidencia registrada exitosamente.")
             self.crear_interfaz_principal()
@@ -125,7 +136,7 @@ class Aplicacion:
         frame = tk.Frame(self.root)
         frame.pack(padx=20, pady=20, fill=tk.BOTH, expand=True)
 
-        columnas = ("IDIncidencia", "Titulo", "Descripcion", "Estado", "FechaCreacion", "FechaActualizacion", "IDUsuario")
+        columnas = ("IDIncidencia", "Titulo", "Descripción", "Estado", "FechaCreacion", "FechaActualizacion", "IDUsuario")
         self.tree = ttk.Treeview(frame, columns=columnas, show='headings')
         self.tree.pack(fill=tk.BOTH, expand=True)
 
@@ -174,11 +185,11 @@ class Aplicacion:
         estado_entry.insert(0, incidencia[3])
 
         tk.Label(ventana_actualizar, text="Fecha de Actualización:", font=('Arial', 12)).grid(row=3, column=0, sticky=tk.W, pady=5)
-        fecha_actualizacion_entry = tk.Entry(ventana_actualizar, font=('Arial', 12), width=30)
+        fecha_actualizacion_entry = DateEntry(ventana_actualizar, font=('Arial', 12), width=30, background='darkblue', foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
         fecha_actualizacion_entry.grid(row=3, column=1, pady=5)
-        fecha_actualizacion_entry.insert(0, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        fecha_actualizacion_entry.set_date(datetime.now())
 
-        tk.Button(ventana_actualizar, text="Guardar Cambios", font=('Arial', 12), command=lambda: self.guardar_incidencia_actualizada(incidencia[0], titulo_entry.get(), descripcion_entry.get(), estado_entry.get(), fecha_actualizacion_entry.get(), ventana_actualizar)).grid(row=4, columnspan=2, pady=10)
+        tk.Button(ventana_actualizar, text="Guardar Cambios", font=('Arial', 12), command=lambda: self.guardar_incidencia_actualizada(incidencia[0], titulo_entry.get(), descripcion_entry.get(), estado_entry.get(), fecha_actualizacion_entry.get_date().strftime('%Y-%m-%d'), ventana_actualizar)).grid(row=4, columnspan=2, pady=10)
 
     def guardar_incidencia_actualizada(self, id_incidencia, titulo, descripcion, estado, fecha_actualizacion, ventana):
         if actualizar_incidencia(id_incidencia, titulo, descripcion, estado, fecha_actualizacion):
@@ -189,6 +200,10 @@ class Aplicacion:
             messagebox.showerror("Error", "No se pudo actualizar la incidencia.")
 
     def borrar_incidencia(self):
+        if self.user_type != 'Administrador':
+            messagebox.showerror("Error", "Solo los administradores pueden borrar incidencias.")
+            return
+
         selected_item = self.tree.selection()
         if not selected_item:
             messagebox.showerror("Error", "Seleccione una incidencia para borrar.")
@@ -204,7 +219,7 @@ class Aplicacion:
 
     def crear_interfaz_lista_asignaciones(self):
         for widget in self.root.winfo_children():
-            self.root.destroy()
+            widget.destroy()
 
         self.root.title("Lista de Asignaciones")
         self.root.geometry("800x600")
@@ -222,7 +237,7 @@ class Aplicacion:
 
         self.cargar_asignaciones()
 
-        tk.Button(frame, text="Asignar Técnico", command=self.crear_interfaz_asignar_tecnico, font=('Arial', 12)).pack(pady=10)
+        tk.Button(frame, text="Borrar Asignación", command=self.borrar_asignacion, font=('Arial', 12)).pack(pady=10)
         tk.Button(frame, text="Regresar", command=self.crear_interfaz_principal, font=('Arial', 12)).pack(pady=10)
 
     def cargar_asignaciones(self):
@@ -232,33 +247,23 @@ class Aplicacion:
         for asignacion in asignaciones:
             self.assignment_tree.insert('', tk.END, values=asignacion)
 
-    def crear_interfaz_asignar_tecnico(self):
-        ventana_asignar = tk.Toplevel(self.root)
-        ventana_asignar.title("Asignar Técnico")
-        ventana_asignar.geometry("400x300")
+    def borrar_asignacion(self):
+        if self.user_type != 'Administrador':
+            messagebox.showerror("Error", "Solo los administradores pueden borrar asignaciones.")
+            return
 
-        tk.Label(ventana_asignar, text="ID Incidencia:", font=('Arial', 12)).grid(row=0, column=0, sticky=tk.W, pady=5)
-        id_incidencia_entry = tk.Entry(ventana_asignar, font=('Arial', 12), width=30)
-        id_incidencia_entry.grid(row=0, column=1, pady=5)
+        selected_item = self.assignment_tree.selection()
+        if not selected_item:
+            messagebox.showerror("Error", "Seleccione una asignación para borrar.")
+            return
 
-        tk.Label(ventana_asignar, text="ID Técnico:", font=('Arial', 12)).grid(row=1, column=0, sticky=tk.W, pady=5)
-        id_tecnico_entry = tk.Entry(ventana_asignar, font=('Arial', 12), width=30)
-        id_tecnico_entry.grid(row=1, column=1, pady=5)
-
-        tk.Label(ventana_asignar, text="Fecha de Asignación:", font=('Arial', 12)).grid(row=2, column=0, sticky=tk.W, pady=5)
-        fecha_asignacion_entry = tk.Entry(ventana_asignar, font=('Arial', 12), width=30)
-        fecha_asignacion_entry.grid(row=2, column=1, pady=5)
-        fecha_asignacion_entry.insert(0, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-
-        tk.Button(ventana_asignar, text="Asignar", font=('Arial', 12), command=lambda: self.guardar_asignacion(id_incidencia_entry.get(), id_tecnico_entry.get(), fecha_asignacion_entry.get(), ventana_asignar)).grid(row=3, columnspan=2, pady=10)
-
-    def guardar_asignacion(self, id_incidencia, id_tecnico, fecha_asignacion, ventana):
-        if registrar_asignacion(id_incidencia, id_tecnico, fecha_asignacion):
-            messagebox.showinfo("Asignar Técnico", "Técnico asignado exitosamente.")
-            self.cargar_asignaciones()
-            ventana.destroy()
-        else:
-            messagebox.showerror("Error", "No se pudo asignar el técnico.")
+        id_asignacion = self.assignment_tree.item(selected_item)['values'][0]
+        if messagebox.askyesno("Confirmar", "¿Está seguro de que desea borrar esta asignación?"):
+            if borrar_asignacion(id_asignacion):
+                messagebox.showinfo("Borrar Asignación", "Asignación borrada exitosamente.")
+                self.cargar_asignaciones()
+            else:
+                messagebox.showerror("Error", "No se pudo borrar la asignación.")
 
     def crear_interfaz_lista_usuarios(self):
         for widget in self.root.winfo_children():
@@ -280,6 +285,7 @@ class Aplicacion:
 
         self.cargar_usuarios()
 
+        tk.Button(frame, text="Borrar Usuario", command=self.borrar_usuario, font=('Arial', 12)).pack(pady=10)
         tk.Button(frame, text="Regresar", command=self.crear_interfaz_principal, font=('Arial', 12)).pack(pady=10)
 
     def cargar_usuarios(self):
@@ -288,6 +294,73 @@ class Aplicacion:
         usuarios = obtener_todos_los_usuarios()
         for usuario in usuarios:
             self.user_tree.insert('', tk.END, values=usuario)
+
+    def borrar_usuario(self):
+        if self.user_type != 'Administrador':
+            messagebox.showerror("Error", "Solo los administradores pueden borrar usuarios.")
+            return
+
+        selected_item = self.user_tree.selection()
+        if not selected_item:
+            messagebox.showerror("Error", "Seleccione un usuario para borrar.")
+            return
+
+        id_usuario = self.user_tree.item(selected_item)['values'][0]
+        if messagebox.askyesno("Confirmar", "¿Está seguro de que desea borrar este usuario?"):
+            if borrar_usuario(id_usuario):
+                messagebox.showinfo("Borrar Usuario", "Usuario borrado exitosamente.")
+                self.cargar_usuarios()
+            else:
+                messagebox.showerror("Error", "No se pudo borrar el usuario.")
+
+    def crear_interfaz_asignar_incidencia(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+        self.root.title("Asignar Incidencia")
+        self.root.geometry("600x400")
+
+        frame = tk.Frame(self.root)
+        frame.pack(padx=20, pady=20)
+
+        tk.Label(frame, text="Seleccionar Incidencia:", font=('Arial', 12)).grid(row=0, column=0, sticky=tk.W, pady=5)
+        self.incidencia_combobox = ttk.Combobox(frame, font=('Arial', 12), width=37)
+        self.incidencia_combobox.grid(row=0, column=1, pady=5)
+
+        tk.Label(frame, text="Seleccionar Técnico:", font=('Arial', 12)).grid(row=1, column=0, sticky=tk.W, pady=5)
+        self.tecnico_combobox = ttk.Combobox(frame, font=('Arial', 12), width=37)
+        self.tecnico_combobox.grid(row=1, column=1, pady=5)
+
+        tk.Label(frame, text="Fecha de Asignación:", font=('Arial', 12)).grid(row=2, column=0, sticky=tk.W, pady=5)
+        self.fecha_asignacion_entry = DateEntry(frame, font=('Arial', 12), width=40, background='darkblue', foreground='white', borderwidth=2, date_pattern='yyyy-mm-dd')
+        self.fecha_asignacion_entry.grid(row=2, column=1, pady=5)
+
+        tk.Button(frame, text="Asignar Incidencia", command=self.asignar_incidencia, font=('Arial', 12)).grid(row=3, columnspan=2, pady=10)
+        tk.Button(frame, text="Regresar", command=self.crear_interfaz_principal, font=('Arial', 12)).grid(row=4, columnspan=2, pady=10)
+
+        self.cargar_incidencias_y_tecnicos()
+
+    def cargar_incidencias_y_tecnicos(self):
+        incidencias = obtener_todas_las_incidencias()
+        tecnicos = obtener_todos_los_tecnicos()
+
+        self.incidencia_combobox['values'] = [f"{incidencia[0]} - {incidencia[1]}" for incidencia in incidencias]
+        self.tecnico_combobox['values'] = [f"{tecnico[0]} - {tecnico[1]}" for tecnico in tecnicos]
+
+    def asignar_incidencia(self):
+        incidencia_seleccionada = self.incidencia_combobox.get().split(' - ')[0]
+        tecnico_seleccionado = self.tecnico_combobox.get().split(' - ')[0]
+        fecha_asignacion = self.fecha_asignacion_entry.get_date().strftime('%Y-%m-%d')
+
+        if not incidencia_seleccionada or not tecnico_seleccionado or not fecha_asignacion:
+            messagebox.showerror("Error", "Todos los campos son obligatorios.")
+            return
+
+        if registrar_asignacion(incidencia_seleccionada, tecnico_seleccionado, fecha_asignacion):
+            messagebox.showinfo("Asignación", "Incidencia asignada exitosamente.")
+            self.crear_interfaz_principal()
+        else:
+            messagebox.showerror("Error", "No se pudo asignar la incidencia.")
 
 if __name__ == "__main__":
     root = tk.Tk()
