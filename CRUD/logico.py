@@ -1,114 +1,103 @@
 import mysql.connector
 from mysql.connector import Error
 
-def crear_conexion():
+def create_connection():
     return mysql.connector.connect(
         host='localhost',
         user='root',
         passwd='',
-        database='gestion_tickets'
+        database=''
     )
 
-def validar_usuario(nombre_usuario, contrasena):
-    try:
-        conn = crear_conexion()
-        cursor = conn.cursor()
-        cursor.execute("SELECT IDUsuario FROM Usuario WHERE Nombre=%s AND Contrasena=%s", (nombre_usuario, contrasena))
-        usuario = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        return usuario
-    except Error as e:
-        print(f"Error al conectar con la base de datos: {e}")
-        return None
+def fetch_all(query):
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute(query)
+    result = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return result
 
-def registrar_usuario(nombre_usuario, correo, contrasena, tipo):
+def execute_query(query, params=None):
+    conn = create_connection()
+    cursor = conn.cursor()
+    if params:
+        cursor.execute(query, params)
+    else:
+        cursor.execute(query)
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+def validar_usuario(nombre_usuario, contraseña):
+    query = "SELECT IDUsuario FROM usuario WHERE nombre = %s AND contraseña = %s"
+    params = (nombre_usuario, contraseña)
+    conn = create_connection()
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return result
+
+def registrar_usuario(nombre_usuario, correo, contraseña, tipo):
+    query = "INSERT INTO usuario (nombre, correo, contraseña, tipo) VALUES (%s, %s, %s, %s)"
+    params = (nombre_usuario, correo, contraseña, tipo)
     try:
-        conn = crear_conexion()
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO Usuario (Nombre, Correo, Contrasena, Tipo) VALUES (%s, %s, %s, %s)", (nombre_usuario, correo, contrasena, tipo))
-        conn.commit()
-        cursor.close()
-        conn.close()
+        execute_query(query, params)
         return True
     except Error as e:
         print(f"Error al registrar usuario: {e}")
         return False
 
-def registrar_incidencia(titulo, descripcion, estado, fecha_creacion, fecha_actualizacion, id_usuario):
+def registrar_incidencia(titulo, descripción, estado, fecha_creacion, fecha_actualizacion, id_usuario):
+    query = "INSERT INTO incidencia (Titulo, Descripción, Estado, FechaCreacion, FechaActualizacion, IDUsuario) VALUES (%s, %s, %s, %s, %s, %s)"
+    params = (titulo, descripción, estado, fecha_creacion, fecha_actualizacion, id_usuario)
     try:
-        conn = crear_conexion()
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO Incidencia (Titulo, Descripcion, Estado, FechaCreacion, FechaActualizacion, IDUsuario) VALUES (%s, %s, %s, %s, %s, %s)", (titulo, descripcion, estado, fecha_creacion, fecha_actualizacion, id_usuario))
-        conn.commit()
-        cursor.close()
-        conn.close()
+        execute_query(query, params)
         return True
     except Error as e:
         print(f"Error al registrar incidencia: {e}")
         return False
 
 def obtener_todas_las_incidencias():
-    try:
-        conn = crear_conexion()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Incidencia")
-        incidencias = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return incidencias
-    except Error as e:
-        print(f"Error al obtener incidencias: {e}")
-        return []
+    query = "SELECT * FROM incidencia"
+    return fetch_all(query)
 
-def actualizar_incidencia(id_incidencia, titulo, descripcion, estado, fecha_actualizacion):
+def actualizar_incidencia(id_incidencia, titulo, descripción, estado, fecha_actualizacion):
+    query = "UPDATE incidencia SET Titulo = %s, Descripción = %s, Estado = %s, FechaActualizacion = %s WHERE IDIncidencia = %s"
+    params = (titulo, descripción, estado, fecha_actualizacion, id_incidencia)
     try:
-        conn = crear_conexion()
-        cursor = conn.cursor()
-        cursor.execute("UPDATE Incidencia SET Titulo=%s, Descripcion=%s, Estado=%s, FechaActualizacion=%s WHERE IDIncidencia=%s", (titulo, descripcion, estado, fecha_actualizacion, id_incidencia))
-        conn.commit()
-        cursor.close()
-        conn.close()
+        execute_query(query, params)
         return True
     except Error as e:
         print(f"Error al actualizar incidencia: {e}")
         return False
 
 def borrar_incidencia(id_incidencia):
+    query = "DELETE FROM incidencia WHERE IDIncidencia = %s"
+    params = (id_incidencia,)
     try:
-        conn = crear_conexion()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM Incidencia WHERE IDIncidencia=%s", (id_incidencia,))
-        conn.commit()
-        cursor.close()
-        conn.close()
+        execute_query(query, params)
         return True
     except Error as e:
         print(f"Error al borrar incidencia: {e}")
         return False
 
 def registrar_asignacion(id_incidencia, id_tecnico, fecha_asignacion):
+    query = "INSERT INTO asignacion (IDIncidencia, IDTecnico, FechaAsignacion) VALUES (%s, %s, %s)"
+    params = (id_incidencia, id_tecnico, fecha_asignacion)
     try:
-        conn = crear_conexion()
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO Asignacion (IDIncidencia, IDTecnico, FechaAsignacion) VALUES (%s, %s, %s)", (id_incidencia, id_tecnico, fecha_asignacion))
-        conn.commit()
-        cursor.close()
-        conn.close()
+        execute_query(query, params)
         return True
     except Error as e:
-        print(f"Error al registrar asignación: {e}")
+        print(f"Error al registrar asignacion: {e}")
         return False
 
 def obtener_todas_las_asignaciones():
-    try:
-        conn = crear_conexion()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Asignacion")
-        asignaciones = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return asignaciones
-    except Error as e:
-        print(f"Error al obtener asignaciones: {e}")
-        return []
+    query = "SELECT * FROM asignacion"
+    return fetch_all(query)
+
+def obtener_todos_los_usuarios():
+    query = "SELECT IDUsuario, Nombre, Correo, Tipo FROM usuario"
+    return fetch_all(query)
